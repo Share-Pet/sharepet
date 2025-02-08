@@ -1,16 +1,14 @@
 from flask import Flask, request, jsonify
-from flask_sqlalchemy import SQLAlchemy
-from config import Config
 from services import (
     contestant_service, 
     game_service,
     leaderboard_service,
     popularity_service
 )
+from utils.db import init_db
 
 app = Flask(__name__)
-app.config.from_object(Config)
-db = SQLAlchemy(app)
+init_db(app)
 
 @app.route('/health', methods=['GET'])
 def get_health():

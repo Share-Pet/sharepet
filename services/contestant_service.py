@@ -1,5 +1,4 @@
-from models import Contestant
-from app import db
+from models import db, Contestant
 
 def create_contestant(data):
     name = data.get('name')

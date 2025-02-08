@@ -1,7 +1,6 @@
 from datetime import datetime, date
-from models import Session, Contestant, Game
+from models import db, Session, Contestant, Game
 from sqlalchemy import func
-from app import db
 
 def get_global_leaderboard(filter_date=None):
     """
