@@ -12,16 +12,16 @@ Postman Collection : https://www.postman.com/shresthsaxena5/rank-royale
 |-------------------------|--------|----------------------------------------------|
 | /contestants            | POST   | Create a new contestant                      |
 | /contestants            | GET    | List all contestants                         |
-| /contestants/<id>       | PUT    | Update contestant info                       |
-| /contestants/<id>       | DELETE | Delete contestant                            |
+| /contestants/<contestant_id>       | PUT    | Update contestant info                       |
+| /contestants/<contestant_id>       | DELETE | Delete contestant                            |
 | /games                  | POST   | Create a new game                            |
 | /games                  | GET    | List all games                               |
-| /games/<id>/start       | PUT    | Start a game                                 |
-| /games/<id>/end         | PUT    | End a game                                   |
-| /games/<id>/upvote      | POST   | Upvote a game                                |
-| /games/<id>/join        | POST   | A contestant joins a game (start a session)  |
-| /games/<id>/leave       | POST   | End a session (contestant leaves)            |
-| /games/<id>/score       | POST   | Assign a score to a session                  |
+| /games/<game_id>/start       | PUT    | Start a game                                 |
+| /games/<game_id>/end         | PUT    | End a game                                   |
+| /games/<game_id>/upvote      | POST   | Upvote a game                                |
+| /games/<game_id>/join        | POST   | A contestant joins a game (start a session)  |
+| /games/<game_id>/leave       | POST   | End a session (contestant leaves)            |
+| /games/<game_id>/score       | POST   | Assign a score to a session                  |
 | /leaderboard            | GET    | Global leaderboard                           |
 | /leaderboard/<game_id>  | GET    | Per-game leaderboard                         |
 | /popularity             | GET    | Popularity index for all games               |
