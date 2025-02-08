@@ -1,7 +1,5 @@
 from flask_sqlalchemy import SQLAlchemy
-
-db = SQLAlchemy()
-
+from app import db
 class Contestant(db.Model):
     __tablename__ = 'contestants'
     id = db.Column(db.Integer, primary_key=True)

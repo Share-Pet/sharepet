@@ -1,6 +1,7 @@
 from flask import Flask, request, jsonify
+from flask_sqlalchemy import SQLAlchemy
+from config import Config
 from utils.db import init_db
-from models import db
 from services import (
     contestant_service, 
     game_service,
@@ -9,7 +10,8 @@ from services import (
 )
 
 app = Flask(__name__)
-init_db(app)
+app.config.from_object(Config)
+db = SQLAlchemy(app)
 
 @app.route('/health', methods=['GET'])
 def get_health():

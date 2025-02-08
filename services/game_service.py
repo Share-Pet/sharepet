@@ -1,5 +1,6 @@
 from datetime import datetime
-from models import db, Game, Session
+from models import Game, Session
+from app import db
 
 def create_game(data):
     name = data.get('name')

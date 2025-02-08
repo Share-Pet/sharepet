@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta
-from models import db, Game, Session
+from models import Game, Session
 from sqlalchemy import func
+from app import db
 
 import time
 
