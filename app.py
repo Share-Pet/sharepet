@@ -12,6 +12,10 @@ def create_app():
     app = Flask(__name__)
     init_db(app)
 
+    @app.route('/health', methods=['GET'])
+    def get_health():
+        return jsonify({"success": True, "message": 'Hey Doc! I am healthy'}), 400
+        
     @app.route('/contestants', methods=['POST'])
     def create_contestant():
         try:
