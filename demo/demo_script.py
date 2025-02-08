@@ -1,5 +1,7 @@
 import requests
 import time
+import random
+import string
 
 BASE_URL = "https://droid-rank-royale.vercel.app"
 
@@ -22,10 +24,14 @@ def main():
 
     # 2. CREATE MULTIPLE CONTESTANTS
     print("\n--- Creating Contestants ---")
+    def generate_random_string(length=6):
+        letters = string.ascii_lowercase
+        return ''.join(random.choice(letters) for i in range(length))
+
     contestants = [
-        {"name": "Alice", "email": "alice@example.com"},
-        {"name": "Bob", "email": "bob@example.com"},
-        {"name": "Charlie", "email": "charlie@example.com"}
+        {"name": f"Alice_{generate_random_string()}", "email": f"alice_{generate_random_string()}@example.com"},
+        {"name": f"Bob_{generate_random_string()}", "email": f"bob_{generate_random_string()}@example.com"},
+        {"name": f"Charlie_{generate_random_string()}", "email": f"charlie_{generate_random_string()}@example.com"}
     ]
     contestant_ids = []
     for c in contestants:

@@ -15,25 +15,33 @@ def get_all_games():
     return Game.query.all()
 
 def start_game(game_id):
-    game = Game.query.get_or_404(game_id)
+    game = Game.query.get(game_id)
+    if not game:
+        raise ValueError("Game not found.")
     game.start_time = datetime.utcnow()
     db.session.commit()
     return game
 
 def end_game(game_id):
-    game = Game.query.get_or_404(game_id)
+    game = Game.query.get(game_id)
+    if not game:
+        raise ValueError("Game not found.")
     game.end_time = datetime.utcnow()
     db.session.commit()
     return game
 
 def upvote_game(game_id):
-    game = Game.query.get_or_404(game_id)
+    game = Game.query.get(game_id)
+    if not game:
+        raise ValueError("Game not found.")
     game.upvotes += 1
     db.session.commit()
     return game
 
 def join_game(game_id, contestant_id, join_time=None):
-    game = Game.query.get_or_404(game_id)
+    game = Game.query.get(game_id)
+    if not game:
+        raise ValueError("Game not found.")
     if not join_time:
         join_time = datetime.utcnow()
 
@@ -47,7 +55,9 @@ def join_game(game_id, contestant_id, join_time=None):
     return new_session
 
 def leave_game(game_id, session_id, leave_time=None):
-    session = Session.query.get_or_404(session_id)
+    session = Session.query.get(session_id)
+    if not session:
+        raise ValueError("Session not found.")
     if session.game_id != game_id:
         raise ValueError("Session does not belong to the specified game.")
     if not leave_time:
@@ -57,7 +67,9 @@ def leave_game(game_id, session_id, leave_time=None):
     return session
 
 def assign_score(game_id, session_id, score):
-    session = Session.query.get_or_404(session_id)
+    session = Session.query.get(session_id)
+    if not session:
+        raise ValueError("Session not found.")
     if session.game_id != game_id:
         raise ValueError("Session does not belong to the specified game.")
     session.score = score
