@@ -1,7 +1,6 @@
 from flask import Flask, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from config import Config
-from utils.db import init_db
 from services import (
     contestant_service, 
     game_service,
