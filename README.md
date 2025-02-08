@@ -2,82 +2,84 @@
 
 A Flask application that demonstrates a multi-game leaderboard with contestant management, per-game scoring, and a popularity index. Uses Python 3 and SQLAlchemy (with either SQLite or PostgreSQL).
 
-## Prerequisites
-
-- Python 3.8+
-- pip or pipenv (for installing dependencies)
-
-## Setup & Run (Local)
-
-### Clone this repository:
-
-```bash
-git clone <YOUR_REPO_URL>
-cd <cloned_folder>
-```
-
-### Create and activate a virtual environment (optional but recommended):
-
-```bash
-python3 -m venv venv
-source venv/bin/activate  # Linux/Mac
-# Windows:
-# venv\Scripts\activate
-```
-
-### Install dependencies:
-
-```bash
-pip install -r requirements.txt
-```
-
-### (Optional) Configure environment variables:
-
-If you want to use SQLite, you can skip this (defaults to an in-memory DB or local file).  
-If using PostgreSQL, ensure you have `DATABASE_URL` and `SECRET_KEY` in a `.env` file or environment variables:
-
-```bash
-DATABASE_URL=postgresql+psycopg2://<USER>:<PASSWORD>@<HOST>:<PORT>/<DBNAME>
-SECRET_KEY=some-random-secret
-```
-
-### Run the application:
-
-```bash
-python app.py
-```
-
-By default, the server starts at [http://127.0.0.1:5000](http://127.0.0.1:5000).
-
 ## Interacting with the API
 
-A Postman Collection is provided in the repo (or shared separately). Import it into Postman to see all endpoints with sample requests and payloads.
+Postman Collection : https://www.postman.com/shresthsaxena5/rank-royale
 
-### Key Endpoints (examples):
+## Endpoints
 
-- `POST /contestants`: Create a new contestant.
-- `GET /contestants`: List all contestants.
-- `POST /games`: Create a new game.
-- `PUT /games/<id>/start` / `PUT /games/<id>/end`: Start/end a game.
-- `POST /games/<game_id>/join`: A contestant joins a game (session starts).
-- `POST /games/<game_id>/score`: Assign a score to a contestant’s session.
-- `GET /leaderboard`: Global leaderboard.
-- `GET /leaderboard/<game_id>`: Game-specific leaderboard.
-- `GET /popularity`: Popularity index for each game.
+| Endpoint                | Method | Purpose                                      |
+|-------------------------|--------|----------------------------------------------|
+| /contestants            | POST   | Create a new contestant                      |
+| /contestants            | GET    | List all contestants                         |
+| /contestants/<id>       | PUT    | Update contestant info                       |
+| /contestants/<id>       | DELETE | Delete contestant                            |
+| /games                  | POST   | Create a new game                            |
+| /games                  | GET    | List all games                               |
+| /games/<id>/start       | PUT    | Start a game                                 |
+| /games/<id>/end         | PUT    | End a game                                   |
+| /games/<id>/upvote      | POST   | Upvote a game                                |
+| /games/<id>/join        | POST   | A contestant joins a game (start a session)  |
+| /games/<id>/leave       | POST   | End a session (contestant leaves)            |
+| /games/<id>/score       | POST   | Assign a score to a session                  |
+| /leaderboard            | GET    | Global leaderboard                           |
+| /leaderboard/<game_id>  | GET    | Per-game leaderboard                         |
+| /popularity             | GET    | Popularity index for all games               |
 
-## Basic Workflow
+## Using the Demo Script
 
-1. Create multiple games (`POST /games`).
-2. Create contestants (`POST /contestants`).
-3. Contestants join games (`POST /games/<id>/join`).
-4. Assign scores (`POST /games/<id>/score`).
-5. Retrieve leaderboards (`GET /leaderboard` or `/leaderboard/<game_id>`).
-6. Check popularity (`GET /popularity`).
+To showcase the workflow automatically, this repository includes a `demo_script.py`. It demonstrates:
 
-## Notes & Assumptions
+- Creating 5+ games
+- Adding multiple contestants
+- Joining games with different timestamps
+- Assigning scores
+- Retrieving leaderboards (game and global)
+- Calling the popularity endpoint twice (with a 6-minute gap)
 
-- By default, if you do not set a `DATABASE_URL`, the app may use a local SQLite DB (or in-memory if configured so). Data will reset when the app restarts in-memory mode.
-- Timestamps are generally expected as ISO8601 strings (e.g., "2025-02-07 14:00:00") for join/leave events.
-- The popularity score is recalculated/cached every 5 minutes if you keep the server running continuously.
+### Steps to Run `demo_script.py`
 
-That’s it! You can now experiment, extend, and use the Postman Collection to test each endpoint. Have fun exploring the leaderboard functionality!
+Ensure you have `requests` installed:
+
+```bash
+pip install requests
+```
+
+(If it’s not already in `requirements.txt`, add `requests==2.31.0` or a similar version.)
+
+Run the demo script:
+
+```bash
+python demo_script.py
+```
+
+Observe the terminal output:
+
+- It prints success/error messages for each API call.
+- It waits 6 minutes near the end to let the popularity cache expire.
+- Then it calls `/popularity` again to demonstrate a refreshed score.
+
+### Exact Steps (If Done Manually)
+
+If you prefer manual steps (via cURL or Postman), follow this order:
+
+1. Create 5 or More Games via `POST /games`.
+2. Create Multiple Contestants via `POST /contestants`.
+3. Join Games at Different Timestamps via `POST /games/<id>/join`.
+4. Assign Scores via `POST /games/<id>/score`.
+5. Check Leaderboards (global and per-game).
+6. Check Popularity (`GET /popularity`) twice, with a 6-minute gap to see it refresh.
+
+### Common Pitfalls / Notes
+
+- **SQLite vs. PostgreSQL**: On a serverless platform, file-based SQLite can be read-only or ephemeral. Use a hosted Postgres DB for persistence.
+- **Timestamps**: Provide ISO8601 strings (e.g. "2025-02-07 14:00:00") when contestants join/leave.
+- **Popularity Cache**: The popularity index is cached for 5 minutes. That’s why we wait 6 minutes in the script before calling again.
+
+## Conclusion
+
+- Run locally and experiment with endpoints or the demo script.
+- Use the default SQLite database or configure `DATABASE_URL` for a persistent PostgreSQL.
+- The demo script thoroughly demonstrates the assignment requirements from start to finish.
+
+Enjoy exploring Rank-Royale and customizing it further!
