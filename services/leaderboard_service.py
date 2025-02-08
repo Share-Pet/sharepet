@@ -8,6 +8,7 @@ def get_global_leaderboard(filter_date=None):
     """
     query = db.session.query(
         Session.contestant_id,
+        Session.game_id,
         func.sum(Session.score).label('total_score')
     )
 
@@ -17,13 +18,15 @@ def get_global_leaderboard(filter_date=None):
         # Filter sessions that started or ended on that date (simple approach)
         query = query.filter(func.date(Session.start_time) == filter_date_obj)
 
-    query = query.group_by(Session.contestant_id).order_by(func.sum(Session.score).desc())
+    query = query.group_by(Session.contestant_id, Session.game_id).order_by(func.sum(Session.score).desc())
 
     results = []
     for row in query:
         contestant = Contestant.query.get(row.contestant_id)
+        game = Game.query.get(row.game_id)
         results.append({
             "contestant_name": contestant.name,
+            "game_name": game.name,
             "total_score": row.total_score
         })
     return results
