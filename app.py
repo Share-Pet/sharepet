@@ -2,10 +2,7 @@ from flask import Flask, request, jsonify
 from utils.db import init_db
 
 from services import (
-    contestant_service, 
-    game_service,
-    leaderboard_service,
-    popularity_service
+    contestant_service
 )
 
 app = Flask(__name__)
@@ -18,8 +15,13 @@ def get_health():
 @app.route('/', methods=['GET'])
 def home():
     return get_health()
+
+@app.route('/home', methods=['GET'])
+def home():
+    return jsonify({"success": True, "message": 'Service is up'}), 200
     
-@app.route('/contestants', methods=['POST'])
+    
+@app.route('/profiles', methods=['POST'])
 def create_contestant():
     try:
         data = request.get_json()
@@ -32,7 +34,7 @@ def create_contestant():
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 400
 
-@app.route('/contestants', methods=['GET'])
+@app.route('/profiles/<id>', methods=['GET'])
 def get_contestants():
     try:
         contestants = contestant_service.get_all_contestants()

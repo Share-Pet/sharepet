@@ -1,4 +1,5 @@
 from models import db, Contestant
+
 def create_contestant(data):
     name = data.get('name')
     email = data.get('email')
