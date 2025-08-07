@@ -21,7 +21,7 @@ def home():
     return jsonify({"success": True, "message": 'Service is up'}), 200
     
     
-@app.route('/profiles', methods=['POST'])
+@app.route('/profile', methods=['POST'])
 def create_user():
     try:
         data = request.get_json()
@@ -34,7 +34,7 @@ def create_user():
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 400
 
-@app.route('/profiles/<id>', methods=['GET'])
+@app.route('/profiles', methods=['GET'])
 def get_users():
     try:
         users = user_service.get_all_users()
