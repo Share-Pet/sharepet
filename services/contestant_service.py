@@ -1,35 +1,35 @@
-from models import db, Contestant
+from models import db, user
 
-def create_contestant(data):
+def create_user(data):
     name = data.get('name')
     email = data.get('email')
     if not name or not email:
         raise ValueError("Name and email are required.")
-    existing_contestant = Contestant.query.filter_by(email=email).first()
-    if existing_contestant:
-        raise ValueError("A contestant with this email already exists.")
-    new_contestant = Contestant(name=name, email=email)
-    db.session.add(new_contestant)
+    existing_user = user.query.filter_by(email=email).first()
+    if existing_user:
+        raise ValueError("A user with this email already exists.")
+    new_user = user(name=name, email=email)
+    db.session.add(new_user)
     db.session.commit()
-    return new_contestant
+    return new_user
 
-def get_all_contestants():
-    return Contestant.query.all()
+def get_all_users():
+    return user.query.all()
 
-def update_contestant(contestant_id, data):
-    contestant = Contestant.query.get(contestant_id)
-    if not contestant:
-        raise ValueError("Contestant not found.")
+def update_user(user_id, data):
+    user = user.query.get(user_id)
+    if not user:
+        raise ValueError("user not found.")
     if 'name' in data:
-        contestant.name = data['name']
+        user.name = data['name']
     if 'email' in data:
-        contestant.email = data['email']
+        user.email = data['email']
     db.session.commit()
-    return contestant
+    return user
 
-def delete_contestant(contestant_id):
-    contestant = Contestant.query.get(contestant_id)
-    if not contestant:
-        raise ValueError("Contestant not found.")
-    db.session.delete(contestant)
+def delete_user(user_id):
+    user = user.query.get(user_id)
+    if not user:
+        raise ValueError("user not found.")
+    db.session.delete(user)
     db.session.commit()

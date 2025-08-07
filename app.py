@@ -2,7 +2,7 @@ from flask import Flask, request, jsonify
 from utils.db import init_db
 
 from services import (
-    contestant_service
+    user_service
 )
 
 app = Flask(__name__)
@@ -22,11 +22,11 @@ def home():
     
     
 @app.route('/profiles', methods=['POST'])
-def create_contestant():
+def create_user():
     try:
         data = request.get_json()
-        c = contestant_service.create_contestant(data)
-        return jsonify({"success": True, "contestant": {
+        c = user_service.create_user(data)
+        return jsonify({"success": True, "user": {
             "id": c.id,
             "name": c.name,
             "email": c.email
@@ -35,17 +35,17 @@ def create_contestant():
         return jsonify({"success": False, "error": str(e)}), 400
 
 @app.route('/profiles/<id>', methods=['GET'])
-def get_contestants():
+def get_users():
     try:
-        contestants = contestant_service.get_all_contestants()
+        users = user_service.get_all_users()
         result = []
-        for c in contestants:
+        for c in users:
             result.append({
                 "id": c.id,
                 "name": c.name,
                 "email": c.email
             })
-        return jsonify({"success": True, "contestants": result})
+        return jsonify({"success": True, "users": result})
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 400
 
