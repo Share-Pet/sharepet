@@ -9,5 +9,5 @@
   status = 200
 
 [build.environment]
-  REACT_APP_GOOGLE_CLIENT_ID="549406128427-sd68mk83j7kbnr1uvolh1p3en9940p0n.apps.googleusercontent.com"
-  ENV="stage"
+  REACT_APP_GOOGLE_CLIENT_ID=process.env.REACT_APP_GOOGLE_CLIENT_ID
+  ENV=stage
