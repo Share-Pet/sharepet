@@ -13,7 +13,7 @@ def get_health():
     return jsonify({"success": True, "message": 'Hey Doc! I am healthy'}), 200
 
 @app.route('/', methods=['GET'])
-def home():
+def health():
     return get_health()
 
 @app.route('/home', methods=['GET'])
