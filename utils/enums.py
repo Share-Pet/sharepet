@@ -5,6 +5,10 @@ class UserType(Enum):
     OWNER = "OWNER"
     OTHER = "OTHER"
 
+class UserRoles(Enum):
+    USER = "USER"
+    ADMIN = "ADMIN"
+
 class Species(Enum):
     HUMAN = "HUMAN"
     DOG = "DOG"

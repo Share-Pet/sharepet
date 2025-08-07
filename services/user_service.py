@@ -51,7 +51,6 @@ def get_user_details(id):
     user = User.query.get(id)
     return user
 
-
 def update_user(user_id, data):
     user = User.query.get(user_id)
     if not user:
@@ -62,13 +61,6 @@ def update_user(user_id, data):
         user.email = data['email']
     db.session.commit()
     return user
-
-def delete_user(user_id):
-    user = User.query.get(user_id)
-    if not user:
-        raise ValueError("User not found.")
-    db.session.delete(user)
-    db.session.commit()
 
 def get_all_pets():
     owner_alias = aliased(User)

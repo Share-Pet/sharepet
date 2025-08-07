@@ -2,7 +2,7 @@ from flask import Flask, request, jsonify
 from utils.db import init_db
 
 from services import (
-    user_service
+    user_service, event_service
 )
 
 app = Flask(__name__)
@@ -59,6 +59,32 @@ def get_user(id):
         }
 
         return jsonify({"success": True, "user": result})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 400
+    
+
+@app.route('/create-event', methods=['POST'])
+def create_event():
+    try:
+        data = request.get_json()
+        event = event_service.create_event(data)
+        return jsonify({"success": True, "event": {
+            "event_id": event.event_id,
+            "event_name": event.event_name,
+            "event_desc": event.event_desc
+        }}), 200
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 400
+
+@app.route('/register', methods=['POST'])
+def register_for_event():
+    try:
+        data = request.get_json()
+        registration = event_service.register_user_for_event(data['user_id'], data['event_id'])
+        return jsonify({"success": True, "registration": {
+            "registration_id": registration.registration_id,
+            "event_id": registration.event_id
+        }}), 200
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 400
 
