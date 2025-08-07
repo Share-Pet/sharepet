@@ -1,4 +1,5 @@
 from models import db, user
+from utils.enums import UserType
 
 def create_user(data):
     name = data.get('name')
@@ -33,3 +34,6 @@ def delete_user(user_id):
         raise ValueError("user not found.")
     db.session.delete(user)
     db.session.commit()
+
+def get_all_pets():
+    return user.query.filter_by(type=UserType.PET).all()

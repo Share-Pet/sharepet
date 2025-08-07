@@ -1,12 +1,7 @@
 from flask_sqlalchemy import SQLAlchemy
-from enum import Enum
+from utils.enums import UserType
 
 db = SQLAlchemy()
-
-class UserType(Enum):
-    PET = "PET"
-    OWNER = "OWNER"
-    OTHER = "OTHER"
 
 class user(db.Model):
     __tablename__ = 'users'
