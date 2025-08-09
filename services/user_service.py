@@ -1,79 +1,174 @@
-from models import db, User
-from utils.enums import UserType, Species
-from sqlalchemy.orm import aliased
+from typing import Dict, Any, Optional, List
+from datetime import datetime
+import logging
 
-def create_user(data):
-    name = data.get('name')
-    email = data.get('email')
-    user_type = data.get('type')  # Either UserType.OWNER.value or UserType.PET.value
-    parent_id = data.get('parent_id') 
-    species = data.get('species') 
+from models import db, Owner, Pet, EventRegistration
+from utils.validators import validate_phone, validate_coordinates
 
-    if not name or not email or not user_type:
-        raise ValueError("Name, email, and type are required.")
+logger = logging.getLogger(__name__)
+
+
+class UserService:
+    """Service class for user operations"""
     
-    if user_type not in [UserType.OWNER.value, UserType.PET.value]:
-        raise ValueError("Invalid user type. Must be OWNER or PET.")
+    def get_user_by_id(self, user_id: int) -> Optional[Owner]:
+        """Get active user by ID"""
+        try:
+            return Owner.query.filter_by(
+                id=user_id,
+                is_active=True,
+                is_deleted=False
+            ).first()
+        except Exception as e:
+            logger.error(f"Error fetching user {user_id}: {str(e)}")
+            return None
     
-    if user_type == UserType.PET.value and not parent_id:
-        raise ValueError("A pet must have a parent (owner).")
-
-    if user_type == UserType.PET.value:
-        parent = User.query.get(parent_id)
-        print(parent.type)
-        if not parent or parent.type != UserType.OWNER:
-            raise ValueError("The provided parent_id does not correspond to a valid OWNER.")
+    def get_user_profile(self, user_id: int) -> Dict[str, Any]:
+        """
+        Get complete user profile with pets
+        
+        Args:
+            user_id: User ID
+            
+        Returns:
+            Dict with profile data or error
+        """
+        try:
+            user = self.get_user_by_id(user_id)
+            if not user:
+                return {'success': False, 'error': 'User not found'}
+            
+            # Get user's pets
+            pets = Pet.query.filter_by(
+                owner_id=user_id,
+                is_active=True
+            ).order_by(Pet.created_at.desc()).all()
+            
+            # Get event statistics
+            event_stats = self._get_event_stats(user_id)
+            
+            return {
+                'success': True,
+                'data': {
+                    'user': {
+                        'id': user.id,
+                        'email': user.email,
+                        'name': user.name,
+                        'phone': user.phone,
+                        'profile_image': user.profile_image,
+                        'user_role': user.user_role,
+                        'coins_balance': user.coins_balance,
+                        'referral_code': user.referral_code,
+                        'member_since': user.created_at.isoformat() if user.created_at else None
+                    },
+                    'location': {
+                        'address': user.address,
+                        'city': user.city,
+                        'state': user.state,
+                        'country': user.country,
+                        'pincode': user.pincode,
+                        'latitude': user.latitude,
+                        'longitude': user.longitude
+                    },
+                    'pets': [self._format_pet(pet) for pet in pets],
+                    'statistics': {
+                        'total_pets': len(pets),
+                        'events_registered': event_stats['registered'],
+                        'events_attended': event_stats['attended']
+                    }
+                }
+            }
+            
+        except Exception as e:
+            logger.error(f"Error fetching profile for user {user_id}: {str(e)}")
+            return {'success': False, 'error': 'Failed to fetch profile'}
     
-    if user_type != UserType.PET.value:
-        existing_user = User.query.filter_by(email=email).first()
-        if existing_user:
-            raise ValueError("A user with this email already exists.")
+    def update_profile(self, user_id: int, update_data: Dict) -> Dict[str, Any]:
+        """
+        Update user profile
+        
+        Args:
+            user_id: User ID
+            update_data: Fields to update
+            
+        Returns:
+            Dict with success status
+        """
+        try:
+            user = self.get_user_by_id(user_id)
+            if not user:
+                return {'success': False, 'error': 'User not found'}
+            
+            # Allowed fields for update
+            allowed_fields = [
+                'name', 'phone', 'address', 'city', 'state',
+                'country', 'pincode', 'latitude', 'longitude'
+            ]
+            
+            # Validate and update fields
+            updated_fields = []
+            for field in allowed_fields:
+                if field in update_data and update_data[field] is not None:
+                    # Validate specific fields
+                    if field == 'phone' and not validate_phone(update_data[field]):
+                        return {'success': False, 'error': 'Invalid phone number'}
+                    
+                    if field in ['latitude', 'longitude']:
+                        if not validate_coordinates(
+                            update_data.get('latitude'),
+                            update_data.get('longitude')
+                        ):
+                            return {'success': False, 'error': 'Invalid coordinates'}
+                    
+                    setattr(user, field, update_data[field])
+                    updated_fields.append(field)
+            
+            if not updated_fields:
+                return {'success': False, 'error': 'No valid fields to update'}
+            
+            user.updated_at = datetime.utcnow()
+            db.session.commit()
+            
+            logger.info(f"Profile updated for user {user_id}: {updated_fields}")
+            
+            return {
+                'success': True,
+                'data': {
+                    'message': 'Profile updated successfully',
+                    'updated_fields': updated_fields
+                }
+            }
+            
+        except Exception as e:
+            db.session.rollback()
+            logger.error(f"Error updating profile for user {user_id}: {str(e)}")
+            return {'success': False, 'error': 'Profile update failed'}
     
-    if user_type == UserType.OWNER.value and not species:
-        species = Species.HUMAN.value
+    def _get_event_stats(self, user_id: int) -> Dict[str, int]:
+        """Get user's event statistics"""
+        try:
+            registrations = EventRegistration.query.filter_by(owner_id=user_id).all()
+            return {
+                'registered': len([r for r in registrations if r.status == 'registered']),
+                'attended': len([r for r in registrations if r.status == 'attended'])
+            }
+        except Exception as e:
+            logger.error(f"Error fetching event stats: {str(e)}")
+            return {'registered': 0, 'attended': 0}
     
-    # Create the new user
-    new_user = User(
-        name=name,
-        email=email,
-        type=user_type,
-        parent_id=parent_id if user_type == UserType.PET.value else None,
-        species=species,
-        parent = parent if user_type == UserType.PET.value else None 
-    )
-
-    db.session.add(new_user)
-    db.session.commit()
-    
-    return new_user
-
-def get_user_details(id):
-    user = User.query.get(id)
-    return user
-
-def update_user(user_id, data):
-    user = User.query.get(user_id)
-    if not user:
-        raise ValueError("User not found.")
-    if 'name' in data:
-        user.name = data['name']
-    if 'email' in data:
-        user.email = data['email']
-    db.session.commit()
-    return user
-
-def get_all_pets():
-    owner_alias = aliased(User)
-    pets = db.session.query(
-        User.name.label('pet_name'),
-        User.image.label('pet_image'),
-        owner_alias.name.label('owner_name')
-    ).join(
-        owner_alias, owner_alias.id == User.parent_id 
-    ).filter(
-        User.type == UserType.PET
-    ).all()
-    
-    pets_data = [{"pet_name": pet.pet_name, "parent_name": pet.owner_name, "pet_image": pet.pet_image} for pet in pets]
-
-    return pets_data
+    def _format_pet(self, pet: Pet) -> Dict:
+        """Format pet data for response"""
+        return {
+            'id': pet.id,
+            'name': pet.name,
+            'species': pet.species.value if pet.species else None,
+            'breed': pet.breed,
+            'age': {
+                'years': pet.age_years,
+                'months': pet.age_months
+            },
+            'gender': pet.gender,
+            'profile_image': pet.profile_image,
+            'is_vaccinated': pet.is_vaccinated,
+            'is_neutered': pet.is_neutered
+        }
