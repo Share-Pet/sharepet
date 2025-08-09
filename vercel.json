@@ -5,12 +5,12 @@
     {
       "src": "frontend/package.json",
       "use": "@vercel/static-build",
-      "config": { "distDir": "/build", "buildCommand": "CI= npm run build" }
+      "config": { "distDir": "frontend/build", "buildCommand": "CI= npm run build" }
     }
   ],
   "routes": [
     { "src": "^/api/?(.*)$", "dest": "backend/app.py" },
     { "handle": "filesystem" },
-    { "src": "/(.*)", "dest": "frontend/index.html" }
+    { "src": "/(.*)", "dest": "/index.html" }
   ]
 }
