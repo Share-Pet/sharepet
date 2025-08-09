@@ -1,5 +1,3 @@
-import secrets
-import string
 from datetime import datetime, timedelta
 from typing import Dict, Optional, Any
 from google.oauth2 import id_token
@@ -7,10 +5,9 @@ from google.auth.transport import requests as google_requests
 from sqlalchemy.exc import IntegrityError
 import logging
 
-from models import db, Owner, Ledger
-from utils.enums import UserRoles
+from models import db, Owner
 from config import Config
-
+from services import user_service, ledger_service
 logger = logging.getLogger(__name__)
 
 
@@ -21,6 +18,8 @@ class AuthService:
         self.google_client_id = Config.GOOGLE_CLIENT_ID
         self.signup_bonus = 100
         self.referral_bonus = 50
+        self.user_service = user_service.UserService()
+        self.ledger_service = ledger_service.LedgerService()
     
     def signup_with_google(self, google_token: str, referral_code: Optional[str] = None) -> Dict[str, Any]:
         """
@@ -40,21 +39,20 @@ class AuthService:
                 return {'success': False, 'error': 'Invalid Google token', 'status_code': 401}
             
             # Check if user already exists
-            existing_user = Owner.query.filter_by(google_id=idinfo['sub']).first()
+            existing_user = self.user_service.get_user_by_google_id(idinfo['sub'])
             if existing_user:
                 return {'success': False, 'error': 'User already exists. Please login.', 'status_code': 409}
             
-            # Check email uniqueness
-            if Owner.query.filter_by(email=idinfo['email']).first():
-                return {'success': False, 'error': 'Email already registered', 'status_code': 409}
-            
             # Create new user
-            new_user = self._create_user(idinfo, referral_code)
+            referee = None
+            if referral_code:
+                referee = self.user_service.get_user_by_referral_code(referral_code)
+            new_user = self.user_service.create_user(idinfo, referee)
             
             # Process signup bonus and referral
-            self._process_signup_bonus(new_user)
-            if referral_code:
-                self._process_referral(new_user, referral_code)
+            self.ledger_service.process_signup_bonus(new_user.id)
+            if referee:
+                self.ledger_service.process_referral_bonus(new_user.id, referee.id)
             
             db.session.commit()
             
@@ -128,95 +126,7 @@ class AuthService:
         except ValueError as e:
             logger.error(f"Google token verification failed: {str(e)}")
             return None
-    
-    def _create_user(self, google_info: Dict, referral_code: Optional[str]) -> Owner:
-        """Create new user from Google info"""
-        new_user = Owner(
-            google_id=google_info['sub'],
-            email=google_info['email'],
-            name=google_info.get('name', ''),
-            profile_image=google_info.get('picture'),
-            referral_code=self._generate_referral_code(),
-            referred_by=referral_code,
-            user_role=UserRoles.USER.value,
-            coins_balance=0,
-            created_at=datetime.utcnow(),
-            updated_at=datetime.utcnow(),
-            last_login=datetime.utcnow(),
-            is_active=True,
-            is_deleted=False
-        )
-        db.session.add(new_user)
-        db.session.flush()  # Get ID before commit
-        return new_user
-    
-    def _generate_referral_code(self, length: int = 8) -> str:
-        """Generate unique referral code"""
-        characters = string.ascii_uppercase + string.digits
-        while True:
-            code = ''.join(secrets.choice(characters) for _ in range(length))
-            if not Owner.query.filter_by(referral_code=code).first():
-                return code
-    
-    def _process_signup_bonus(self, user: Owner) -> None:
-        """Add signup bonus to new user"""
-        user.coins_balance += self.signup_bonus
-        
-        ledger_entry = Ledger(
-            owner_id=user.id,
-            transaction_type='credit',
-            amount=self.signup_bonus,
-            balance_after=user.coins_balance,
-            category='signup_bonus',
-            description='Welcome bonus',
-            created_at=datetime.utcnow()
-        )
-        db.session.add(ledger_entry)
-    
-    def _process_referral(self, new_user: Owner, referral_code: str) -> None:
-        """Process referral bonuses"""
-        try:
-            referrer = Owner.query.filter_by(
-                referral_code=referral_code,
-                is_active=True
-            ).first()
-            
-            if not referrer:
-                return
-            
-            # Bonus for referrer
-            referrer.coins_balance += self.referral_bonus
-            referrer_ledger = Ledger(
-                owner_id=referrer.id,
-                transaction_type='credit',
-                amount=self.referral_bonus,
-                balance_after=referrer.coins_balance,
-                category='referral_bonus',
-                reference_type='referral',
-                reference_id=new_user.id,
-                description=f'Referral bonus for inviting {new_user.name}',
-                created_at=datetime.utcnow()
-            )
-            db.session.add(referrer_ledger)
-            
-            # Bonus for new user
-            new_user.coins_balance += self.referral_bonus
-            referee_ledger = Ledger(
-                owner_id=new_user.id,
-                transaction_type='credit',
-                amount=self.referral_bonus,
-                balance_after=new_user.coins_balance,
-                category='referral_bonus',
-                reference_type='referral',
-                reference_id=referrer.id,
-                description='Referral joining bonus',
-                created_at=datetime.utcnow()
-            )
-            db.session.add(referee_ledger)
-            
-        except Exception as e:
-            logger.error(f"Referral processing error: {str(e)}")
-    
+
     def _format_user_response(self, user: Owner) -> Dict:
         """Format user data for response"""
         return {

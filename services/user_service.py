@@ -1,15 +1,45 @@
-from typing import Dict, Any, Optional, List
-from datetime import datetime
 import logging
-
+import string
+import secrets
+from typing import Dict, Any, Optional
+from datetime import datetime
 from models import db, Owner, Pet, EventRegistration
 from utils.validators import validate_phone, validate_coordinates
+from utils.enums import UserRoles
 
 logger = logging.getLogger(__name__)
 
 
 class UserService:
     """Service class for user operations"""
+
+    def create_user(self, google_info: Dict, referee: Optional[Owner]):
+        new_user = Owner(
+            google_id=google_info['sub'],
+            email=google_info['email'],
+            name=google_info.get('name', ''),
+            profile_image=google_info.get('picture'),
+            referral_code=self._generate_referral_code(),
+            referred_by=referee.id if referee else None,
+            user_role=UserRoles.USER.value,
+            coins_balance=0,
+            created_at=datetime.utcnow(),
+            updated_at=datetime.utcnow(),
+            last_login=datetime.utcnow(),
+            is_active=True,
+            is_deleted=False
+        )
+        db.session.add(new_user)
+        db.session.flush() 
+        return new_user
+    
+    def _generate_user_referral_code(self, length: int = 8) -> str:
+        """Generate unique referral code"""
+        characters = string.ascii_uppercase + string.digits
+        while True:
+            code = ''.join(secrets.choice(characters) for _ in range(length))
+            if not Owner.query.filter_by(referral_code=code).first():
+                return code
     
     def get_user_by_id(self, user_id: int) -> Optional[Owner]:
         """Get active user by ID"""
@@ -21,6 +51,30 @@ class UserService:
             ).first()
         except Exception as e:
             logger.error(f"Error fetching user {user_id}: {str(e)}")
+            return None
+        
+    def get_user_by_google_id(self, google_id: int) -> Optional[Owner]:
+        """Get active user by ID"""
+        try:
+            return Owner.query.filter_by(
+                google_id=google_id,
+                is_active=True,
+                is_deleted=False
+            ).first()
+        except Exception as e:
+            logger.error(f"Error fetching user {google_id}: {str(e)}")
+            return None
+    
+    def get_user_by_referral_code(self, referral_code: str) -> Optional[Owner]:
+        """Get active user by ID"""
+        try:
+            return Owner.query.filter_by(
+                referral_code=referral_code,
+                is_active=True,
+                is_deleted=False
+            ).first()
+        except Exception as e:
+            logger.error(f"Error fetching user {referral_code}: {str(e)}")
             return None
     
     def get_user_profile(self, user_id: int) -> Dict[str, Any]:

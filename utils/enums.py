@@ -67,8 +67,3 @@ class TransactionCategory(Enum):
     PENALTY = "penalty"
     OTHER = "other"
 
-
-class PetGender(Enum):
-    MALE = "Male"
-    FEMALE = "Female"
-    OTHER = "Other"
