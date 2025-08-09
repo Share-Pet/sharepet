@@ -5,7 +5,10 @@
     {
       "src": "frontend/package.json",
       "use": "@vercel/static-build",
-      "config": { "distDir": "frontend/build", "buildCommand": "CI= npm run build" }
+      "config": { 
+        "distDir": "dist",
+        "buildCommand": "npm run build"
+      }
     }
   ],
   "routes": [
