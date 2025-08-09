@@ -4,7 +4,7 @@ from sqlalchemy import and_, or_, func
 import math
 import logging
 
-from models import db, Event, EventRegistration, Owner, Pet, Ledger
+from models import db, Event, EventRegistration, Owner, Ledger
 from utils.validators import validate_event_data
 from utils.location import calculate_distance
 
