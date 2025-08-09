@@ -8,12 +8,18 @@ load_dotenv()
 class Config:
     """Base configuration class"""
     def _normalize_db_url(url: str) -> str:
+        if not url:
+            return url
+        # fix legacy scheme
         if url.startswith("postgres://"):
-            # prefer psycopg v3; switch to +psycopg2 if you installed psycopg2-binary
-            return url.replace("postgres://", "postgresql+psycopg://", 1)
-        if url.startswith("postgresql://") and "+psycopg" not in url and "+psycopg2" not in url:
-            # make the driver explicit so it can't guess the wrong one
-            return url.replace("postgresql://", "postgresql+psycopg://", 1)
+            url = url.replace("postgres://", "postgresql://", 1)
+        # force psycopg2 driver on serverless to avoid libpq issues
+        if "+psycopg2" not in url and "+pg8000" not in url:
+            url = url.replace("postgresql://", "postgresql+psycopg2://", 1)
+        # ensure sslmode
+        if "sslmode=" not in url and "localhost" not in url:
+            sep = "&" if "?" in url else "?"
+            url = f"{url}{sep}sslmode=require"
         return url
     
     # Flask
