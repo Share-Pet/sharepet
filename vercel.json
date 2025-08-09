@@ -1,5 +1,6 @@
 {
   "version": 2,
+  "env": { "PYTHONPATH": "backend" },
   "builds": [
     { "src": "backend/app.py", "use": "@vercel/python" },
     {
@@ -8,9 +9,10 @@
       "config": { "distDir": "build", "buildCommand": "CI='' npm run build" }
     }
   ],
+  "functions": { "backend/app.py": { "runtime": "python3.11", "includeFiles": "backend/**" } },
   "routes": [
     { "src": "^/api/(.*)$", "dest": "backend/app.py" },
     { "handle": "filesystem" },
-    { "src": ".*", "dest": "index.html" }
+    { "src": ".*", "dest": "frontend/index.html" }
   ]
 }
