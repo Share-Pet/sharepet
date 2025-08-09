@@ -83,7 +83,7 @@ def create_app(config_class=Config):
     
     # ============== Health Check ==============
     
-    @app.route('/health', methods=['GET'])
+    @app.route('/api/health', methods=['GET'])
     def health_check():
         """System health check endpoint"""
         return success_response({
