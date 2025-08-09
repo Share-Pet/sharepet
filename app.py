@@ -1,92 +1,432 @@
 from flask import Flask, request, jsonify
-from utils.db import init_db
-
-from services import (
-    user_service, event_service
+from flask_cors import CORS
+from flask_jwt_extended import (
+    create_access_token, create_refresh_token,
+    jwt_required, get_jwt_identity, get_jwt
 )
+from datetime import datetime
+import os
+from dotenv import load_dotenv
 
-app = Flask(__name__)
-init_db(app)
+from config import Config
+from extensions import db, jwt, migrate
+from services.auth_service import AuthService
+from services.user_service import UserService
+from services.pet_service import PetService
+from services.event_service import EventService
+from middleware.error_handlers import register_error_handlers
+from middleware.validators import validate_request
+from utils.responses import success_response, error_response
+from utils.enums import UserRoles
 
-@app.route('/health', methods=['GET'])
-def get_health():
-    return jsonify({"success": True, "message": 'Hey Doc! I am healthy'}), 200
+# Load environment variables
+load_dotenv()
 
-@app.route('/', methods=['GET'])
-def health():
-    return get_health()
-
-@app.route('/home', methods=['GET'])
-def home():
-    pets = user_service.get_all_pets()
-    return jsonify({"success": True, "data": pets}), 200
+def create_app(config_class=Config):
+    """Application factory pattern"""
+    app = Flask(__name__)
+    app.config.from_object(config_class)
     
-@app.route('/create-user', methods=['POST'])
-def create_user():
-    try:
-        data = request.get_json()
-        c = user_service.create_user(data)
-        return jsonify({
-            "success": True,
-            "user": {
-                "id": c.id,
-                "name": c.name,
-                "email": c.email,
-                "type": c.type.value,  # Include user type in response
-                "parent_id": c.parent_id if c.type == 'PET' else None
-            }
+    # Initialize extensions
+    db.init_app(app)
+    jwt.init_app(app)
+    migrate.init_app(app, db)
+    
+    # CORS configuration
+    CORS(app, 
+         origins=app.config['CORS_ORIGINS'],
+         allow_headers=['Content-Type', 'Authorization'],
+         methods=['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+         supports_credentials=True)
+    
+    # Register error handlers
+    register_error_handlers(app)
+    
+    # Initialize services
+    auth_service = AuthService()
+    user_service = UserService()
+    pet_service = PetService()
+    event_service = EventService()
+    
+    # ============== JWT Configuration ==============
+    
+    @jwt.user_identity_loader
+    def user_identity_lookup(user):
+        """Configure what to store in JWT identity"""
+        return user
+    
+    @jwt.user_lookup_loader
+    def user_lookup_callback(_jwt_header, jwt_data):
+        """Load user from JWT data"""
+        identity = jwt_data["sub"]
+        return user_service.get_user_by_id(identity)
+    
+    @jwt.expired_token_loader
+    def expired_token_callback(jwt_header, jwt_payload):
+        """Handle expired token"""
+        return error_response("Token has expired", 401)
+    
+    @jwt.invalid_token_loader
+    def invalid_token_callback(error):
+        """Handle invalid token"""
+        return error_response("Invalid token", 401)
+    
+    @jwt.unauthorized_loader
+    def missing_token_callback(error):
+        """Handle missing token"""
+        return error_response("Authorization required", 401)
+    
+    @jwt.revoked_token_loader
+    def revoked_token_callback(jwt_header, jwt_payload):
+        """Handle revoked token"""
+        return error_response("Token has been revoked", 401)
+    
+    # ============== Health Check ==============
+    
+    @app.route('/health', methods=['GET'])
+    def health_check():
+        """System health check endpoint"""
+        return success_response({
+            'status': 'healthy',
+            'service': 'Pet Community API',
+            'version': '1.0.0',
+            'timestamp': datetime.utcnow().isoformat()
         })
-    except Exception as e:
-        return jsonify({"success": False, "error": str(e)}), 400
-
-@app.route('/profile/<int:id>', methods=['GET'])
-def get_user(id):
-    try:
-        # Fetch user details based on the provided id
-        user_details = user_service.get_user_details(id)
-        
-        if not user_details:
-            raise ValueError("User not found.")
-        
-        # Format the user details in the response
-        result = {
-            "id": user_details.id,
-            "name": user_details.name,
-            "email": user_details.email,
-            "type": user_details.type.value,  # Include user type
-            "parent_id": user_details.parent_id if user_details.type == 'PET' else None,
-            "image": user_details.image
-        }
-
-        return jsonify({"success": True, "user": result})
-    except Exception as e:
-        return jsonify({"success": False, "error": str(e)}), 400
     
+    # ============== Authentication Endpoints ==============
+    
+    @app.route('/api/v1/auth/signup', methods=['POST'])
+    @validate_request(['google_token'])
+    def signup():
+        """
+        User signup with Google OAuth
+        Required: google_token
+        Optional: referral_code
+        """
+        try:
+            data = request.get_json()
+            result = auth_service.signup_with_google(
+                google_token=data.get('google_token'),
+                referral_code=data.get('referral_code')
+            )
+            
+            if not result['success']:
+                return error_response(result['error'], result.get('status_code', 400))
+            
+            # Create JWT tokens
+            access_token = create_access_token(
+                identity=result['user']['id'],
+                additional_claims={
+                    'email': result['user']['email'],
+                    'role': result['user']['user_role']
+                },
+                fresh=True
+            )
+            refresh_token = create_refresh_token(identity=result['user']['id'])
+            
+            return success_response({
+                'user': result['user'],
+                'tokens': {
+                    'access_token': access_token,
+                    'refresh_token': refresh_token
+                }
+            }, 201)
+            
+        except Exception as e:
+            return error_response(f"Signup failed: {str(e)}", 500)
+    
+    @app.route('/api/v1/auth/login', methods=['POST'])
+    @validate_request(['google_token'])
+    def login():
+        """
+        User login with Google OAuth
+        Required: google_token
+        """
+        try:
+            data = request.get_json()
+            result = auth_service.login_with_google(data.get('google_token'))
+            
+            if not result['success']:
+                return error_response(result['error'], result.get('status_code', 401))
+            
+            # Create JWT tokens
+            access_token = create_access_token(
+                identity=result['user']['id'],
+                additional_claims={
+                    'email': result['user']['email'],
+                    'role': result['user']['user_role']
+                },
+                fresh=True
+            )
+            refresh_token = create_refresh_token(identity=result['user']['id'])
+            
+            return success_response({
+                'user': result['user'],
+                'tokens': {
+                    'access_token': access_token,
+                    'refresh_token': refresh_token
+                }
+            })
+            
+        except Exception as e:
+            return error_response(f"Login failed: {str(e)}", 500)
+    
+    @app.route('/api/v1/auth/refresh', methods=['POST'])
+    @jwt_required(refresh=True)
+    def refresh():
+        """Refresh access token using refresh token"""
+        try:
+            current_user_id = get_jwt_identity()
+            user = user_service.get_user_by_id(current_user_id)
+            
+            if not user:
+                return error_response("User not found", 404)
+            
+            # Create new access token
+            access_token = create_access_token(
+                identity=user.id,
+                additional_claims={
+                    'email': user.email,
+                    'role': user.user_role
+                },
+                fresh=False
+            )
+            
+            return success_response({
+                'access_token': access_token
+            })
+            
+        except Exception as e:
+            return error_response(f"Token refresh failed: {str(e)}", 500)
+    
+    # ============== User Profile Endpoints ==============
+    
+    @app.route('/api/v1/profile', methods=['GET'])
+    @jwt_required()
+    def get_profile():
+        """Get authenticated user's profile with pets"""
+        try:
+            current_user_id = get_jwt_identity()
+            result = user_service.get_user_profile(current_user_id)
+            
+            if not result['success']:
+                return error_response(result['error'], 404)
+            
+            return success_response(result['data'])
+            
+        except Exception as e:
+            return error_response(f"Failed to fetch profile: {str(e)}", 500)
+    
+    @app.route('/api/v1/profile', methods=['PUT'])
+    @jwt_required()
+    def update_profile():
+        """Update user profile"""
+        try:
+            current_user_id = get_jwt_identity()
+            data = request.get_json()
+            
+            result = user_service.update_profile(current_user_id, data)
+            
+            if not result['success']:
+                return error_response(result['error'], 400)
+            
+            return success_response(result['data'])
+            
+        except Exception as e:
+            return error_response(f"Profile update failed: {str(e)}", 500)
+    
+    # ============== Pet Management Endpoints ==============
+    
+    @app.route('/api/v1/pets', methods=['POST'])
+    @jwt_required()
+    @validate_request(['name', 'species'])
+    def add_pet():
+        """
+        Add a new pet for authenticated user
+        Required: name, species
+        Optional: breed, age_years, age_months, gender, weight_kg, etc.
+        """
+        try:
+            current_user_id = get_jwt_identity()
+            data = request.get_json()
+            data['owner_id'] = current_user_id
+            
+            result = pet_service.create_pet(data)
+            
+            if not result['success']:
+                return error_response(result['error'], 400)
+            
+            return success_response(result['data'], 201)
+            
+        except Exception as e:
+            return error_response(f"Failed to add pet: {str(e)}", 500)
+    
+    @app.route('/api/v1/pets/<int:pet_id>', methods=['GET'])
+    @jwt_required()
+    def get_pet(pet_id):
+        """Get pet details"""
+        try:
+            current_user_id = get_jwt_identity()
+            result = pet_service.get_pet_details(pet_id, current_user_id)
+            
+            if not result['success']:
+                return error_response(result['error'], result.get('status_code', 404))
+            
+            return success_response(result['data'])
+            
+        except Exception as e:
+            return error_response(f"Failed to fetch pet: {str(e)}", 500)
+    
+    @app.route('/api/v1/pets/<int:pet_id>', methods=['PUT'])
+    @jwt_required()
+    def update_pet(pet_id):
+        """Update pet details"""
+        try:
+            current_user_id = get_jwt_identity()
+            data = request.get_json()
+            
+            result = pet_service.update_pet(pet_id, current_user_id, data)
+            
+            if not result['success']:
+                return error_response(result['error'], result.get('status_code', 404))
+            
+            return success_response(result['data'])
+            
+        except Exception as e:
+            return error_response(f"Failed to update pet: {str(e)}", 500)
+    
+    # ============== Event Endpoints ==============
+    
+    @app.route('/api/v1/events/nearby', methods=['GET'])
+    @jwt_required(optional=True)
+    def get_nearby_events():
+        """
+        Get events based on location
+        Query params:
+        - search_type: 'coordinates' or 'area'
+        - For coordinates: latitude, longitude, radius_km
+        - For area: city, state (optional), country (optional)
+        - page, per_page for pagination
+        """
+        try:
+            current_user_id = get_jwt_identity()
+            search_params = {
+                'search_type': request.args.get('search_type', 'coordinates'),
+                'latitude': request.args.get('latitude', type=float),
+                'longitude': request.args.get('longitude', type=float),
+                'radius_km': request.args.get('radius_km', 10, type=float),
+                'city': request.args.get('city'),
+                'state': request.args.get('state'),
+                'country': request.args.get('country'),
+                'page': request.args.get('page', 1, type=int),
+                'per_page': request.args.get('per_page', 10, type=int)
+            }
+            
+            # Validate pagination
+            if search_params['page'] < 1 or search_params['per_page'] < 1:
+                return error_response("Invalid pagination parameters", 400)
+            
+            if search_params['per_page'] > 100:
+                return error_response("Maximum 100 items per page", 400)
+            
+            # Get user for default location
+            user = None
+            if current_user_id:
+                user = user_service.get_user_by_id(current_user_id)
+            
+            result = event_service.search_events(search_params, user)
+            
+            if not result['success']:
+                return error_response(result['error'], 400)
+            
+            return success_response(result['data'])
+            
+        except Exception as e:
+            return error_response(f"Failed to fetch events: {str(e)}", 500)
+    
+    @app.route('/api/v1/events/<int:event_id>/register', methods=['POST'])
+    @jwt_required()
+    def register_for_event(event_id):
+        """
+        Register for an event
+        Optional: pet_ids (array of pet IDs to register)
+        """
+        try:
+            current_user_id = get_jwt_identity()
+            data = request.get_json() or {}
+            
+            result = event_service.register_for_event(
+                event_id=event_id,
+                user_id=current_user_id,
+                pet_ids=data.get('pet_ids', [])
+            )
+            
+            if not result['success']:
+                return error_response(result['error'], result.get('status_code', 400))
+            
+            return success_response(result['data'], 201)
+            
+        except Exception as e:
+            return error_response(f"Registration failed: {str(e)}", 500)
+    
+    @app.route('/api/v1/events', methods=['POST'])
+    @jwt_required()
+    @validate_request(['name', 'event_type', 'start_datetime', 'end_datetime', 
+                      'address', 'city', 'latitude', 'longitude'])
+    def create_event():
+        """
+        Create a new event (Admin only)
+        Required: name, event_type, start_datetime, end_datetime, 
+                 address, city, latitude, longitude
+        """
+        try:
+            # Check admin role
+            jwt_data = get_jwt()
+            if jwt_data.get('role') != UserRoles.ADMIN.value:
+                return error_response("Admin privileges required", 403)
+            
+            current_user_id = get_jwt_identity()
+            data = request.get_json()
+            data['creator_id'] = current_user_id
+            
+            result = event_service.create_event(data)
+            
+            if not result['success']:
+                return error_response(result['error'], 400)
+            
+            return success_response(result['data'], 201)
+            
+        except Exception as e:
+            return error_response(f"Failed to create event: {str(e)}", 500)
+    
+    @app.route('/api/v1/events/<int:event_id>', methods=['GET'])
+    @jwt_required(optional=True)
+    def get_event_details(event_id):
+        """Get event details (public endpoint with optional auth)"""
+        try:
+            current_user_id = get_jwt_identity()  # Will be None if not authenticated
+            result = event_service.get_event_details(event_id, current_user_id)
+            
+            if not result['success']:
+                return error_response(result['error'], 404)
+            
+            return success_response(result['data'])
+            
+        except Exception as e:
+            return error_response(f"Failed to fetch event: {str(e)}", 500)
+    
+    return app
 
-@app.route('/create-event', methods=['POST'])
-def create_event():
-    try:
-        data = request.get_json()
-        event = event_service.create_event(data)
-        return jsonify({"success": True, "event": {
-            "event_id": event.event_id,
-            "event_name": event.event_name,
-            "event_desc": event.event_desc
-        }}), 200
-    except Exception as e:
-        return jsonify({"success": False, "error": str(e)}), 400
 
-@app.route('/register', methods=['POST'])
-def register_for_event():
-    try:
-        data = request.get_json()
-        registration = event_service.register_user_for_event(data['user_id'], data['event_id'])
-        return jsonify({"success": True, "registration": {
-            "registration_id": registration.registration_id,
-            "event_id": registration.event_id
-        }}), 200
-    except Exception as e:
-        return jsonify({"success": False, "error": str(e)}), 400
+# Create application instance
+app = create_app()
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    # with app.app_context():
+    #     db.create_all()
+    
+    app.run(
+        host='0.0.0.0',
+        port=int(os.environ.get('PORT', 8000)),
+        debug=os.environ.get('FLASK_ENV') == 'development'
+    )
