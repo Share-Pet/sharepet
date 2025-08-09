@@ -32,7 +32,7 @@ class Config:
     SQLALCHEMY_DATABASE_URI =_normalize_db_url(os.environ.get('DATABASE_URL') or 'sqlite:///pet_community.db')
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SQLALCHEMY_ENGINE_OPTIONS = {
-        'pool_size': NullPool,
+        'poolclass': NullPool,
         'pool_pre_ping': True
     }
     
