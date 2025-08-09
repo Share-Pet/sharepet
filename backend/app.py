@@ -19,6 +19,9 @@ from middleware.validators import validate_request
 from utils.responses import success_response, error_response
 from utils.enums import UserRoles
 
+import  sys
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "backend"))
+
 # Load environment variables
 load_dotenv()
 

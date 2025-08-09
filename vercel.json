@@ -1,18 +1,22 @@
 {
   "version": 2,
-  "env": { "PYTHONPATH": "backend" },
   "builds": [
-    { "src": "backend/app.py", "use": "@vercel/python" },
+    { "src": "api.py", "use": "@vercel/python" },
     {
       "src": "frontend/package.json",
       "use": "@vercel/static-build",
       "config": { "distDir": "build", "buildCommand": "CI='' npm run build" }
     }
   ],
-  "functions": { "backend/app.py": { "runtime": "python3.11", "includeFiles": "backend/**" } },
+  "functions": {
+    "api.py": {
+      "runtime": "python3.11",
+      "includeFiles": "backend/**"
+    }
+  },
   "routes": [
-    { "src": "^/api/(.*)$", "dest": "backend/app.py" },
+    { "src": "^/api/(.*)$", "dest": "app.py" },
     { "handle": "filesystem" },
-    { "src": ".*", "dest": "frontend/index.html" }
+    { "src": ".*", "dest": "index.html" }
   ]
 }
