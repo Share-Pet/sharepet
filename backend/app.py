@@ -147,42 +147,6 @@ def create_app(config_class=Config):
             }, 200)  # Always 200 since it handles both signup and login
             
         except Exception as e:
-            return error_response(f"Signup failed: {str(e)}", 500)
-    
-    @app.route('/api/v1/auth/login', methods=['POST'])
-    @validate_request(['google_token'])
-    def login():
-        """
-        User login with Google OAuth
-        Required: google_token
-        """
-        try:
-            data = request.get_json()
-            result = auth_service.login_with_google(data.get('google_token'))
-            
-            if not result['success']:
-                return error_response(result['error'], result.get('status_code', 401))
-            
-            # Create JWT tokens
-            access_token = create_access_token(
-                identity=result['user']['id'],
-                additional_claims={
-                    'email': result['user']['email'],
-                    'role': result['user']['user_role']
-                },
-                fresh=True
-            )
-            refresh_token = create_refresh_token(identity=result['user']['id'])
-            
-            return success_response({
-                'user': result['user'],
-                'tokens': {
-                    'access_token': access_token,
-                    'refresh_token': refresh_token
-                }
-            })
-            
-        except Exception as e:
             return error_response(f"Authentication failed: {str(e)}", 500)
     
     @app.route('/api/v1/auth/refresh', methods=['POST'])
