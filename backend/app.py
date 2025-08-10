@@ -1,3 +1,4 @@
+import traceback
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from flask_jwt_extended import (
@@ -16,6 +17,7 @@ from services.pet_service import PetService
 from services.event_service import EventService
 from middleware.error_handlers import register_error_handlers
 from middleware.validators import validate_request
+from utils import slack
 from utils.responses import success_response, error_response
 from utils.enums import UserRoles
 
@@ -147,6 +149,11 @@ def create_app(config_class=Config):
             }, 200)  # Always 200 since it handles both signup and login
             
         except Exception as e:
+            slack.error_to_slack(
+                message=str(e),
+                stack_trace=traceback.format_exc(),
+                function_name="google_auth"
+            )
             return error_response(f"Authentication failed: {str(e)}", 500)
     
     @app.route('/api/v1/auth/refresh', methods=['POST'])
