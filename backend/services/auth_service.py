@@ -8,6 +8,8 @@ from config import Config
 from services import user_service, ledger_service
 
 
+from utils.slack import log_to_slack
+
 logger = logging.getLogger(__name__)
 
 
