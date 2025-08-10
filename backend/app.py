@@ -94,19 +94,32 @@ def create_app(config_class=Config):
         })
     
     # ============== Authentication Endpoints ==============
-    
-    @app.route('/api/v1/auth/signup', methods=['POST'])
-    @validate_request(['google_token'])
-    def signup():
+    # Replace both signup and login endpoints with this single endpoint
+    @app.route('/api/v1/auth/google', methods=['POST'])
+    @validate_request(['google_id', 'email', 'name'])
+    def google_auth():
         """
-        User signup with Google OAuth
-        Required: google_token
-        Optional: referral_code
+        Unified Google authentication endpoint
+        Frontend sends decoded Google user data
+        Creates user if new, returns JWT for both new and existing users
+        
+        Expects: {
+            "google_id": "1234567890",
+            "email": "user@example.com", 
+            "name": "John Doe",
+            "profile_image": "https://..." (optional),
+            "referral_code": "ABC123" (optional, only for new users)
+        }
         """
         try:
             data = request.get_json()
-            result = auth_service.signup_with_google(
-                google_token=data.get('google_token'),
+            
+            # Call unified auth service method
+            result = auth_service.authenticate_google_user(
+                google_id=data.get('google_id'),
+                email=data.get('email'),
+                name=data.get('name'),
+                profile_image=data.get('profile_image'),
                 referral_code=data.get('referral_code')
             )
             
@@ -126,50 +139,15 @@ def create_app(config_class=Config):
             
             return success_response({
                 'user': result['user'],
+                'is_new_user': result['is_new_user'],
                 'tokens': {
                     'access_token': access_token,
                     'refresh_token': refresh_token
                 }
-            }, 201)
+            }, 200)  # Always 200 since it handles both signup and login
             
         except Exception as e:
-            return error_response(f"Signup failed: {str(e)}", 500)
-    
-    @app.route('/api/v1/auth/login', methods=['POST'])
-    @validate_request(['google_token'])
-    def login():
-        """
-        User login with Google OAuth
-        Required: google_token
-        """
-        try:
-            data = request.get_json()
-            result = auth_service.login_with_google(data.get('google_token'))
-            
-            if not result['success']:
-                return error_response(result['error'], result.get('status_code', 401))
-            
-            # Create JWT tokens
-            access_token = create_access_token(
-                identity=result['user']['id'],
-                additional_claims={
-                    'email': result['user']['email'],
-                    'role': result['user']['user_role']
-                },
-                fresh=True
-            )
-            refresh_token = create_refresh_token(identity=result['user']['id'])
-            
-            return success_response({
-                'user': result['user'],
-                'tokens': {
-                    'access_token': access_token,
-                    'refresh_token': refresh_token
-                }
-            })
-            
-        except Exception as e:
-            return error_response(f"Login failed: {str(e)}", 500)
+            return error_response(f"Authentication failed: {str(e)}", 500)
     
     @app.route('/api/v1/auth/refresh', methods=['POST'])
     @jwt_required(refresh=True)
