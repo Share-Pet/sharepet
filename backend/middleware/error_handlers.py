@@ -1,8 +1,11 @@
 import logging
+import traceback
 from flask import jsonify
 from sqlalchemy.exc import SQLAlchemyError
 from marshmallow import ValidationError
 from jwt.exceptions import PyJWTError
+from extensions import db
+from utils import slack
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +29,7 @@ def register_error_handlers(app):
             'success': False,
             'error': 'Unauthorized',
             'message': 'Authentication required'
-        }), 401
+        }), 401, {"WWW-Authenticate": ""}
     
     @app.errorhandler(403)
     def forbidden(error):
@@ -68,12 +71,17 @@ def register_error_handlers(app):
     def internal_error(error):
         """Handle internal server errors"""
         logger.error(f"Internal server error: {str(error)}")
+        slack.error_to_slack(
+            message=f"{str(error)}",
+            stack_trace=traceback.format_exc(),
+            function_name=slack.get_caller_function(level=2)
+        )
         return jsonify({
             'success': False,
             'error': 'Internal server error',
             'message': 'An unexpected error occurred'
         }), 500
-    
+
     @app.errorhandler(SQLAlchemyError)
     def database_error(error):
         """Handle database errors"""

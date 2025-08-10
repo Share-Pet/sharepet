@@ -6,6 +6,8 @@ from sqlalchemy.exc import IntegrityError
 from models import db, Owner
 from config import Config
 from services import user_service, ledger_service
+
+
 logger = logging.getLogger(__name__)
 
 
