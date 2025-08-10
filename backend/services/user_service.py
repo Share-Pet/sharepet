@@ -31,6 +31,7 @@ class UserService:
             is_active=True,
             is_deleted=False
         )
+        
         log_to_slack(f"New User Onboarded : {email}", "Info", "create_user")
         
         db.session.add(new_user)
