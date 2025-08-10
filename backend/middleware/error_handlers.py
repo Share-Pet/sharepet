@@ -29,7 +29,7 @@ def register_error_handlers(app):
             'success': False,
             'error': 'Unauthorized',
             'message': 'Authentication required'
-        }), 401
+        }), 401, {"WWW-Authenticate": ""}
     
     @app.errorhandler(403)
     def forbidden(error):
