@@ -13,22 +13,24 @@ logger = logging.getLogger(__name__)
 class UserService:
     """Service class for user operations"""
 
-    def create_user(self, google_info: Dict, referee: Optional[Owner]):
+    def create_user(self, google_id: str, email: str, name: str, 
+                                profile_image: Optional[str] = None, referee: Optional[Owner] = None):
         new_user = Owner(
-            google_id=google_info['sub'],
-            email=google_info['email'],
-            name=google_info.get('name', ''),
-            profile_image=google_info.get('picture'),
+            google_id=google_id,
+            email=email,
+            name=name,
+            profile_image=profile_image,
             referral_code=self._generate_referral_code(),
             referred_by=referee.id if referee else None,
             user_role=UserRoles.USER.value,
-            coins_balance=0,
-            created_at=datetime.utcnow(),
-            updated_at=datetime.utcnow(),
-            last_login=datetime.utcnow(),
+            coins_balance=0,  # Start with 0, bonus added separately
+            created_at=datetime.now(),
+            updated_at=datetime.now(),
+            last_login=datetime.now(),
             is_active=True,
             is_deleted=False
         )
+        
         db.session.add(new_user)
         db.session.flush() 
         return new_user
