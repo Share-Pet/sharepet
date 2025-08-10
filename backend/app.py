@@ -94,7 +94,7 @@ def create_app(config_class=Config):
         })
     
     # ============== Authentication Endpoints ==============
-    # Replace both signup and login endpoints with this single endpoint
+
     @app.route('/api/v1/auth/google', methods=['POST'])
     @validate_request(['google_id', 'email', 'name'])
     def google_auth():
