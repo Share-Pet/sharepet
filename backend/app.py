@@ -18,7 +18,6 @@ from middleware.error_handlers import register_error_handlers
 from middleware.validators import validate_request
 from utils.responses import success_response, error_response
 from utils.enums import UserRoles
-from utils.slack import log_to_slack
 
 # Load environment variables
 load_dotenv()
@@ -184,7 +183,6 @@ def create_app(config_class=Config):
             })
             
         except Exception as e:
-            log_to_slack(f"Authentication failed: {str(e)}", "Error", "google_auth")
             return error_response(f"Authentication failed: {str(e)}", 500)
     
     @app.route('/api/v1/auth/refresh', methods=['POST'])
@@ -213,7 +211,6 @@ def create_app(config_class=Config):
             })
             
         except Exception as e:
-            log_to_slack(f"Token refresh failed: {str(e)}", "Error", "refresh")
             return error_response(f"Token refresh failed: {str(e)}", 500)
     
     # ============== User Profile Endpoints ==============
@@ -232,7 +229,6 @@ def create_app(config_class=Config):
             return success_response(result['data'])
             
         except Exception as e:
-            log_to_slack(f"Failed to fetch profile: {str(e)}", "Error", "get_profile")
             return error_response(f"Failed to fetch profile: {str(e)}", 500)
     
     @app.route('/api/v1/profile', methods=['PUT'])
@@ -251,7 +247,6 @@ def create_app(config_class=Config):
             return success_response(result['data'])
             
         except Exception as e:
-            log_to_slack(f"Profile update failed: {str(e)}", "Error", "update_profile")
             return error_response(f"Profile update failed: {str(e)}", 500)
     
     # ============== Pet Management Endpoints ==============
@@ -278,7 +273,6 @@ def create_app(config_class=Config):
             return success_response(result['data'], 201)
             
         except Exception as e:
-            log_to_slack(f"{str(e)}", "Error", "add_pet")
             return error_response(f"Failed to add pet: {str(e)}", 500)
     
     @app.route('/api/v1/pets/<int:pet_id>', methods=['GET'])
@@ -295,7 +289,6 @@ def create_app(config_class=Config):
             return success_response(result['data'])
             
         except Exception as e:
-            log_to_slack(f"{str(e)}", "Error", "get_pet")
             return error_response(f"Failed to fetch pet: {str(e)}", 500)
     
     @app.route('/api/v1/pets/<int:pet_id>', methods=['PUT'])
@@ -314,7 +307,6 @@ def create_app(config_class=Config):
             return success_response(result['data'])
             
         except Exception as e:
-            log_to_slack(f"{str(e)}", "Error", "update_pet")
             return error_response(f"Failed to update pet: {str(e)}", 500)
     
     # ============== Event Endpoints ==============
@@ -364,7 +356,6 @@ def create_app(config_class=Config):
             return success_response(result['data'])
             
         except Exception as e:
-            log_to_slack(f"{str(e)}", "Error", "get_nearby_events")
             return error_response(f"Failed to fetch events: {str(e)}", 500)
     
     @app.route('/api/v1/events/<int:event_id>/register', methods=['POST'])
@@ -390,7 +381,6 @@ def create_app(config_class=Config):
             return success_response(result['data'], 201)
             
         except Exception as e:
-            log_to_slack(f"{str(e)}", "Error", "register_for_event")
             return error_response(f"Registration failed: {str(e)}", 500)
     
     @app.route('/api/v1/events', methods=['POST'])
@@ -421,7 +411,6 @@ def create_app(config_class=Config):
             return success_response(result['data'], 201)
             
         except Exception as e:
-            log_to_slack(f"{str(e)}", "Error", "create_event")
             return error_response(f"Failed to create event: {str(e)}", 500)
     
     @app.route('/api/v1/events/<int:event_id>', methods=['GET'])
@@ -438,7 +427,6 @@ def create_app(config_class=Config):
             return success_response(result['data'])
             
         except Exception as e:
-            log_to_slack(f"{str(e)}", "Error", "get_event_details")
             return error_response(f"Failed to fetch event: {str(e)}", 500)
     
     return app

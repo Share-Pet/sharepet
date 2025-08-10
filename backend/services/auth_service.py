@@ -6,9 +6,7 @@ from sqlalchemy.exc import IntegrityError
 from models import db, Owner
 from config import Config
 from services import user_service, ledger_service
-from utils.slack import log_to_slack
 
-from utils.slack import log_to_slack
 
 logger = logging.getLogger(__name__)
 
@@ -112,7 +110,6 @@ class AuthService:
             }
         except Exception as e:
             db.session.rollback()
-            log_to_slack(f"{str(e)}", "Error", "authenticate_google_user")
             logger.error(f"Authentication error: {str(e)}")
             return {
                 'success': False,

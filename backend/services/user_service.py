@@ -6,6 +6,7 @@ from datetime import datetime
 from models import db, Owner, Pet, EventRegistration
 from utils.validators import validate_phone, validate_coordinates
 from utils.enums import UserRoles
+from utils.slack import log_to_slack
 
 logger = logging.getLogger(__name__)
 
@@ -30,6 +31,7 @@ class UserService:
             is_active=True,
             is_deleted=False
         )
+        log_to_slack(f"New User Onboarded : {email}", "Info", "create_user")
         
         db.session.add(new_user)
         db.session.flush() 
