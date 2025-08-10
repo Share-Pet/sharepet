@@ -1,7 +1,6 @@
-from flask_sqlalchemy import SQLAlchemy
-from utils.enums import Species, UserRoles
-from datetime import datetime
 from extensions import db
+from datetime import datetime
+from utils.enums import Species, UserRoles
 
 class Owner(db.Model):
     __tablename__ = 'owners'
