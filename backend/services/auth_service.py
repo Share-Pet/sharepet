@@ -113,7 +113,7 @@ class AuthService:
             logger.error(f"Authentication error: {str(e)}")
             return {
                 'success': False,
-                'error': 'Authentication failed',
+                'error': f'Authentication failed : {str(e)}',
                 'status_code': 500
             }
 

@@ -21,7 +21,7 @@ class UserService:
             email=email,
             name=name,
             profile_image=profile_image,
-            referral_code=self._generate_referral_code(),
+            referral_code=self._generate_user_referral_code(),
             referred_by=referee.id if referee else None,
             user_role=UserRoles.USER.value,
             coins_balance=0,  # Start with 0, bonus added separately

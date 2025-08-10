@@ -127,7 +127,7 @@ def create_app(config_class=Config):
             
             if not result['success']:
                 slack.error_to_slack(
-                    message=str(e),
+                    message=result.get('error', ''),
                     stack_trace=traceback.format_exc(),
                     function_name="google_auth"
                 )
