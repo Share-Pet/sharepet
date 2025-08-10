@@ -8,6 +8,8 @@ from config import Config
 from services import user_service, ledger_service
 from utils.slack import log_to_slack
 
+from utils.slack import log_to_slack
+
 logger = logging.getLogger(__name__)
 
 
@@ -111,41 +113,7 @@ class AuthService:
         except Exception as e:
             db.session.rollback()
             log_to_slack(f"{str(e)}", "Error", "authenticate_google_user")
-            logger.error(f"Signup error: {str(e)}")
-            return {'success': False, 'error': 'Signup failed', 'status_code': 500}
-    
-    def login_with_google(self, google_token: str) -> Dict[str, Any]:
-        """
-        Handle user login with Google OAuth
-        
-        Args:
-            google_token: Google OAuth token from frontend
-            
-        Returns:
-            Dict with success status and user data or error
-        """
-        try:
-            # Verify Google token
-            idinfo = self._verify_google_token(google_token)
-            if not idinfo:
-                return {'success': False, 'error': 'Invalid Google token', 'status_code': 401}
-            
-            # Find user
-            user = Owner.query.filter_by(
-                google_id=idinfo['sub'],
-                is_active=True,
-                is_deleted=False
-            ).first()
-            
-            if not user:
-                return {'success': False, 'error': 'User not found. Please signup first.', 'status_code': 404}
-            
-            # Update last login
-            user.last_login = datetime.utcnow()
-            db.session.commit()
-            
-            logger.info(f"User login: {user.email}")
-            
+            logger.error(f"Authentication error: {str(e)}")
             return {
                 'success': False,
                 'error': 'Authentication failed',
