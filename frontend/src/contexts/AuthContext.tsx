@@ -58,7 +58,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         // Try to get user profile from backend
         const response = await apiService.getProfile();
         if (response.success && response.data) {
-          const backendUser = response.data;
+          const backendUser = response.data.user;
           const authUser: AuthUser = {
             id: backendUser.id,
             name: backendUser.name,

@@ -47,7 +47,7 @@ class Config:
     JWT_ERROR_MESSAGE_KEY = 'error'
 
     # CORS
-    CORS_ORIGINS = os.environ.get('CORS_ORIGINS', 'http://localhost:3000').split(',')
+    CORS_ORIGINS = os.environ.get('CORS_ORIGINS', 'http://localhost:5173').split(',')
     
     # Pagination
     DEFAULT_PAGE_SIZE = 10
