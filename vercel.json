@@ -5,17 +5,14 @@
     {
       "src": "frontend/package.json",
       "use": "@vercel/static-build",
-      "config": { 
-        "distDir": "build",
-        "buildCommand": "vite build"
+      "config": {
+        "distDir": "dist",
+        "buildCommand": "npm run build"
       }
     }
   ],
   "routes": [
-    { "src": "^/api/?(.*)$", "dest": "backend/app.py" },
-    { "handle": "filesystem" },
-    { "src": "^/static/(.*)", "dest": "frontend/static/$1" },
-    { "src": "^/(.*\\.(js|css|ico|png|jpg|jpeg|svg))", "dest": "frontend/$1" },
-    { "src": "/(.*)", "dest": "frontend/index.html" }
+    { "src": "^/api/(.*)$", "dest": "backend/app.py" },
+    { "src": "^(?!/api/).*", "dest": "frontend/dist/index.html" }
   ]
 }
