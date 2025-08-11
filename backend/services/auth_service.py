@@ -15,7 +15,6 @@ class AuthService:
     """Service class for authentication operations"""
     
     def __init__(self):
-        self.google_client_id = Config.GOOGLE_CLIENT_ID
         self.signup_bonus = 100
         self.referral_bonus = 50
         self.user_service = user_service.UserService()
