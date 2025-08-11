@@ -13,6 +13,6 @@
   ],
   "routes": [
     { "src": "^/api/(.*)$", "dest": "backend/app.py" },
-    { "src": "^(?!/api/).*", "dest": "frontend/dist/index.html" }
+    { "src": "^(?!/api/).*", "dest": "frontend/index.html" }
   ]
 }
