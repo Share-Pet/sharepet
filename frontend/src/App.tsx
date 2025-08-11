@@ -576,7 +576,7 @@ function App() {
               <div className="w-10 h-10 bg-gradient-to-r from-red-400 to-pink-400 rounded-full flex items-center justify-center">
                 <Heart className="w-6 h-6 text-white fill-current" />
               </div>
-              <h1 className="text-xl font-bold text-gray-900">PawConnect</h1>
+              <h1 className="text-xl font-bold text-gray-900">PawHood</h1>
             </div>
             
             <div className="hidden md:flex items-center space-x-4 flex-1 max-w-md mx-8">
@@ -618,31 +618,7 @@ function App() {
         </div>
       </header>
 
-      {/* Navigation Tabs */}
-      <nav className="bg-white border-b border-gray-100">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex space-x-8">
-            {[
-              { id: 'community', label: 'Community', icon: Users },
-              { id: 'events', label: 'Events', icon: Calendar },
-              { id: 'profile', label: 'Profile', icon: Heart }
-            ].map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center space-x-2 py-4 px-2 border-b-2 font-medium text-sm transition-colors ${
-                  activeTab === tab.id
-                    ? 'border-red-400 text-red-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-              >
-                <tab.icon className="w-5 h-5" />
-                <span>{tab.label}</span>
-              </button>
-            ))}
-          </div>
-        </div>
-      </nav>
+      
 
       {/* Main Content */}
       <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -651,6 +627,31 @@ function App() {
         {activeTab === 'profile' && renderProfileTab()}
       </main>
 
+      {/* Navigation Tabs */}
+      <nav className="fixed bottom-0 inset-x-0 z-50 bg-white border-t border-gray-200 shadow-sm ">
+        <div className="px-4 sm:px-8 lg:px-16">
+          <div className="flex justify-around sm:justify-between">
+              {[
+                { id: 'community', label: 'Community', icon: Users },
+                { id: 'events', label: 'Events', icon: Calendar },
+                { id: 'profile', label: 'Profile', icon: Heart }
+              ].map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`flex items-center gap-2 py-3 px-2 border-t-2 font-medium text-sm transition-colors ${
+                    activeTab === tab.id
+                      ? 'border-red-400 text-red-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
+                >
+                  <tab.icon className="w-5 h-5" />
+                  <span>{tab.label}</span>
+                </button>
+              ))}
+          </div>
+        </div>
+      </nav>
       {/* Modals */}
       <PhotoUpload
         isOpen={showPhotoUpload}
