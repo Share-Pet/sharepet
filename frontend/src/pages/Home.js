@@ -96,32 +96,6 @@ const HomePage = () => {
         return (
           <div className="pb-20">
             {/* Header */}
-            <div className="bg-gradient-to-r from-orange-500 to-pink-500 px-6 pt-12 pb-8 text-white">
-              <div className="flex items-center justify-between mb-6">
-                <div>
-                  <h1 className="text-2xl font-bold">Hello, Sarah! 👋</h1>
-                  <p className="text-orange-100 mt-1">Ready to make some furry friends?</p>
-                </div>
-                <div className="flex gap-3">
-                  <button className="p-2 bg-white/20 backdrop-blur-sm rounded-full">
-                    <Search className="w-5 h-5" />
-                  </button>
-                  <button className="p-2 bg-white/20 backdrop-blur-sm rounded-full">
-                    <Bell className="w-5 h-5" />
-                  </button>
-                </div>
-              </div>
-              
-              {/* Pet Love Motto */}
-              <div className="text-center py-4">
-                <div className="inline-flex items-center gap-2 text-lg font-medium">
-                  <Heart className="w-5 h-5" fill="currentColor" />
-                  "Every pet deserves endless love"
-                  <Heart className="w-5 h-5" fill="currentColor" />
-                </div>
-                <p className="text-orange-100 text-sm mt-1">Connecting hearts, one paw at a time</p>
-              </div>
-            </div>
 
             {/* Events Carousel */}
             <div className="px-6 -mt-6">

@@ -17,7 +17,7 @@ export default function App() {
         <Route path="/community" element={<Community />} />
         <Route path="/events" element={<Events />} />
         <Route path="/profile" element={<ProfilePage />} />
-        <Route path="/Signup" element={<SignupPage />} />
+        <Route path="/login" element={<SignupPage />} />
       </Routes>
       <BottomNav />
     </div>
