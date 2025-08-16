@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
+import { ToastContainer, toast } from 'react-toastify';
 
 // Create context
 const UserContext = createContext();
@@ -35,6 +36,7 @@ export const UserProvider = ({ children }) => {
         window.google.accounts.id.disableAutoSelect();
       }
       console.log('User signed out successfully');
+      toast.success('User Logged out !!');
     } catch (error) {
       console.error('Sign out error:', error);
       localStorage.removeItem('PawHood_user');

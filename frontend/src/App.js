@@ -7,6 +7,7 @@ import ProfilePage from './pages/Profile';
 import SignupPage from './pages/Signup';
 import Navbar from './components/Navbar';
 import BottomNav from './components/BottomNav';
+import { ToastContainer } from 'react-toastify';
 
 export default function App() {
   return (
@@ -20,6 +21,7 @@ export default function App() {
         <Route path="/login" element={<SignupPage />} />
       </Routes>
       <BottomNav />
+      <ToastContainer />
     </div>
   );
 }

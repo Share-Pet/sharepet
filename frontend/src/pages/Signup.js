@@ -26,11 +26,11 @@ const decodeJWTResponse = (token) => {
 export const googleAuth = async (userData, login) => {
   try {
     const response = await login(userData).unwrap();
+    toast.success(response?.data?.is_new_user ? '🚀 Signup Successful! Welcome to PawHood': '🚀 Loged In, Welcome to PawHood !');
     console.log('Login response:', response);
     const { access_token, refresh_token } = response?.data?.tokens;
     console.log(access_token);
     setTokens(access_token, refresh_token);
-    toast.success('🚀 Signup Successful! Welcome to PawHood');
     return response;
   } catch (error) {
     console.error('Google Auth API Error:', error);

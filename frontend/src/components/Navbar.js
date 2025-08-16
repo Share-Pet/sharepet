@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Plus, CalendarDays, Footprints, Dog, Cat, Search, Bell, LogOut, Heart } from 'lucide-react';
+import { Plus, CalendarDays, Footprints, Dog, Cat, Search, Bell, LogOut, Heart, LogInIcon, LogOutIcon, LogIn } from 'lucide-react';
 import { useUser } from '../contexts/userContext';
 
 export default function Navbar() {
@@ -31,7 +31,7 @@ export default function Navbar() {
             className="p-2 bg-white/20 backdrop-blur-sm rounded-full hover:bg-white/30 transition-colors"
             title="Sign Out"
           >
-            <LogOut className="w-5 h-5" />
+            {user ? <LogOutIcon className="w-5 h-5" /> : <LogInIcon className="w-5 h-5" />}
           </button>
         </div>
       </div>
